@@ -62,12 +62,18 @@ jobs:
           ref: ${{ needs.resolve.outputs.sha }}
           path: upstream
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
-          python-version: ${{ needs.resolve.outputs.python }}
-          architecture: x64
+          version: '0.12.7'
+          enable-cache: false
+      - name: Install exact Python runtime
+        run: |
+          uv python install $env:BUILD_PYTHON
+          uv venv --python $env:BUILD_PYTHON --seed .venv
+        env:
+          BUILD_PYTHON: ${{ needs.resolve.outputs.python }}
       - name: Build and verify with upstream tooling
-        run: python scripts/build.py
+        run: .venv/Scripts/python.exe scripts/build.py
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: sabr-windows-x64
