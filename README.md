@@ -17,14 +17,15 @@
 
 ## 自构建
 
-Windows x64 安装 Python 3.12.12 与 Git，克隆本仓库后运行：
+Windows x64 安装 Git 和 [uv](https://docs.astral.sh/uv/)，克隆本仓库后运行（uv 提供确切的 Python 3.12.12）：
 
 ```powershell
-python scripts/resolve.py
+uv python install 3.12.12
+uv venv --python 3.12.12 --seed .venv
+.venv/Scripts/python.exe scripts/resolve.py
 $source = Get-Content resolved.json | ConvertFrom-Json
 git clone --branch $source.branch "https://github.com/$($source.repository).git" upstream
 git -C upstream checkout --detach $source.source_sha
-python -m venv .venv
 .venv/Scripts/python.exe scripts/build.py
 ```
 
