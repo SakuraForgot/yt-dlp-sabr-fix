@@ -1,0 +1,7 @@
+{
+  "repository": "coletdjnz/yt-dlp-dev",
+  "branch": "feat/youtube/sabr",
+  "pull_request": "https://github.com/yt-dlp/yt-dlp/pull/13515",
+  "python": "3.12.12",
+  "release_repository": "SakuraForgot/yt-dlp-sabr-fix"
+}

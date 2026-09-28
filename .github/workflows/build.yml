@@ -1,0 +1,92 @@
+name: Build SABR Windows x64
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: 'Optional full upstream commit SHA; empty follows SABR branch'
+        type: string
+        default: ''
+      force_rebuild:
+        description: 'Publish a separate rebuild revision even if unchanged'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '23 */6 * * *'
+  push:
+    branches: [main]
+    paths: ['source.json', 'scripts/**', '.github/workflows/**']
+permissions:
+  contents: read
+concurrency:
+  group: sabr-release
+  cancel-in-progress: false
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      tag: ${{ steps.resolve.outputs.tag }}
+      build: ${{ steps.resolve.outputs.build }}
+      python: ${{ steps.resolve.outputs.python }}
+      repository: ${{ steps.resolve.outputs.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: resolve
+        run: python scripts/resolve.py
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          FORCE_REBUILD: ${{ inputs.force_rebuild }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.resolve.outputs.build == 'true'
+        with:
+          name: resolved-source
+          path: resolved.json
+  build:
+    needs: resolve
+    if: needs.resolve.outputs.build == 'true'
+    runs-on: windows-2025
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: resolved-source
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ${{ needs.resolve.outputs.repository }}
+          ref: ${{ needs.resolve.outputs.sha }}
+          path: upstream
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ needs.resolve.outputs.python }}
+          architecture: x64
+      - name: Build and verify with upstream tooling
+        run: python scripts/build.py
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: sabr-windows-x64
+          path: dist/*
+          if-no-files-found: error
+  publish:
+    needs: [resolve, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: sabr-windows-x64
+          path: dist
+      - name: Publish immutable prerelease
+        run: python scripts/publish.py
+        env:
+          GH_TOKEN: ${{ github.token }}
