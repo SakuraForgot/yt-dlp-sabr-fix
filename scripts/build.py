@@ -30,7 +30,7 @@ def main():
     for lock in ("pip", "win-x64-pyinstaller", "curl-cffi"):
         run("-m", "pip", "install", "--require-hashes", "-r", f"bundle/requirements/{lock}.txt")
     # Test-only dependency; excluded from the packaged runtime by upstream's hooks.
-    run("devscripts/install_deps.py", "--include-group", "test")
+    run("devscripts/install_deps.py", "--omit-default", "--include-group", "test")
     run("-m", "pytest", "test/test_sabr", "-q")
     built = datetime.datetime.now(datetime.timezone.utc)
     version = built.strftime("%Y.%m.%d")
