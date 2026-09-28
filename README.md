@@ -4,6 +4,8 @@
 
 **[下载预发布版本](https://github.com/SakuraForgot/yt-dlp-sabr-fix/releases)** · [自动构建](https://github.com/SakuraForgot/yt-dlp-sabr-fix/actions/workflows/build.yml)
 
+首个完成在线验收的构建见 [2026-09-28 验收记录](docs/validation-2026-09-28.md)，包含确切 EXE 哈希与 FluentYTDL 适配边界。
+
 ## 自动构建
 
 - 每 6 小时检查一次上游，另支持手动触发与构建脚本变更触发；GitHub 调度可能延迟，长期无活动的公开仓库可能被暂停调度。
