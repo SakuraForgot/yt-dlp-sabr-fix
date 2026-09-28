@@ -27,9 +27,11 @@ with tempfile.TemporaryDirectory(prefix="sabr-frozen-") as directory:
     # Single executable in a clean directory, with neither Python nor tools on PATH.
     isolated = Path(directory) / "yt-dlp.exe"
     isolated.write_bytes(data)
-    for args in (["--version"], ["--help"], ["--ignore-config", "-v", "--list-extractors"]):
+    for args in (["--version"], ["--help"], ["--ignore-config", "-v"]):
         result = subprocess.run([str(isolated), *args], cwd=directory, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
-        assert result.returncode == 0, result.stderr
+        # Verbose without a URL initializes YoutubeDL and prints identity, then
+        # exits 2 with the expected usage error. --list-extractors exits earlier.
+        assert result.returncode == (2 if "-v" in args else 0), result.stderr
         assert "Traceback" not in result.stderr and "ModuleNotFoundError" not in result.stderr
         if args == ["--version"]:
             assert result.stdout.strip() == info["version"]
