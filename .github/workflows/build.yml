@@ -64,7 +64,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
         with:
-          version: '0.12.7'
+          version: '0.13.4'
           enable-cache: false
       - name: Install exact Python runtime
         run: |

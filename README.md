@@ -11,7 +11,8 @@
 - 每 6 小时检查一次上游，另支持手动触发与构建脚本变更触发；GitHub 调度可能延迟，长期无活动的公开仓库可能被暂停调度。
 - 每次先解析分支为完整 SHA，再按该 SHA 检出。上游 SHA 与构建配方均未改变时跳过已发布构建。
 - 手动输入完整 `source_sha` 可重建指定 revision；`force_rebuild` 生成独立版本，不覆盖历史发布资产。
-- 使用 Python 3.12.12 x64、上游带哈希依赖锁、lazy extractors 与官方 `python -m bundle.pyinstaller --clean`。不维护自制 spec。
+- 使用 Python 3.12.15 x64、上游带哈希依赖锁、lazy extractors 与官方 `python -m bundle.pyinstaller --clean`。不维护自制 spec。
+- 2026-10-21 证书事件修复：构建前安装带 PyPI wheel SHA-256 的 pip 26.2.2 / certifi 2026.10.19；仅在临时锁文件中替换低于安全版本的对应条目，保留其他上游依赖及其哈希。打包前再次检查安全版本下限。此变更需要重新构建、验证并发布核心，不能修复历史 EXE。
 - CI 运行上游 SABR 测试，检查 PE x64、打包模块、无 Python/PATH 环境下独立启动。构建与发布分 job，只有发布 job 有写权限。
 - 输出 `yt-dlp.exe`、`BUILD_INFO.json`、`VALIDATION.json`、`SHA256SUMS.txt`、准确上游源代码快照及许可证。完整提交、配方哈希、构建时间、Python/依赖、显示版本可追溯。
 
@@ -19,11 +20,11 @@
 
 ## 自构建
 
-Windows x64 安装 Git 和 [uv](https://docs.astral.sh/uv/)，克隆本仓库后运行（uv 提供确切的 Python 3.12.12）：
+Windows x64 安装 Git 和 [uv](https://docs.astral.sh/uv/)，克隆本仓库后运行（uv 提供确切的 Python 3.12.15）：
 
 ```powershell
-uv python install 3.12.12
-uv venv --python 3.12.12 --seed .venv
+uv python install 3.12.15
+uv venv --python 3.12.15 --seed .venv
 .venv/Scripts/python.exe scripts/resolve.py
 $source = Get-Content resolved.json | ConvertFrom-Json
 git clone --branch $source.branch "https://github.com/$($source.repository).git" upstream

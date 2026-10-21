@@ -7,7 +7,10 @@ import platform
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+from security_requirements import SECURITY_PINS, pinned_line, secure_lock, verify_installed
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "upstream"
@@ -27,10 +30,18 @@ def main():
     # Never pass a publishing credential to upstream code.
     for key in ("GH_TOKEN", "GITHUB_TOKEN"):
         os.environ.pop(key, None)
-    for lock in ("pip", "win-x64-pyinstaller", "curl-cffi"):
-        run("-m", "pip", "install", "--require-hashes", "-r", f"bundle/requirements/{lock}.txt")
+    with tempfile.TemporaryDirectory(prefix="sabr-security-locks-") as directory:
+        bootstrap = Path(directory) / "security.txt"
+        bootstrap.write_text("".join(pinned_line(name) for name in SECURITY_PINS), encoding="utf-8")
+        run("-m", "pip", "install", "--require-hashes", "-r", str(bootstrap))
+        for lock in ("pip", "win-x64-pyinstaller", "curl-cffi"):
+            source_lock = SOURCE / f"bundle/requirements/{lock}.txt"
+            patched_lock = Path(directory) / f"{lock}.txt"
+            patched_lock.write_text(secure_lock(source_lock.read_text()), encoding="utf-8")
+            run("-m", "pip", "install", "--require-hashes", "-r", str(patched_lock))
     # Test-only dependency; excluded from the packaged runtime by upstream's hooks.
     run("devscripts/install_deps.py", "--omit-default", "--include-group", "test")
+    verify_installed()
     run("-m", "pytest", "test/test_sabr", "-q")
     built = datetime.datetime.now(datetime.timezone.utc)
     version = built.strftime("%Y.%m.%d")
